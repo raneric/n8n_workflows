@@ -12,8 +12,8 @@
       "type": "n8n-nodes-base.emailReadImap",
       "typeVersion": 2.1,
       "position": [
-        -1680,
-        -176
+        -1776,
+        -528
       ],
       "id": "0bc24193-b70a-4567-8f39-e0c033223353",
       "name": "Email Trigger (IMAP)",
@@ -52,8 +52,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -1296,
-        -176
+        -1392,
+        -528
       ],
       "id": "e15efaeb-82f8-45f4-86bd-9260bed1a165",
       "name": "If"
@@ -80,21 +80,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Robust JSON extraction from AI agent output\nconst rawOutput = $input.first().json.output;\n\n// Try direct parse first\ntry {\n  return JSON.parse(rawOutput);\n} catch (e1) {\n  // Try stripping markdown code fences\n  const cleaned = rawOutput\n    .replace(/^```(?:json)?\\s*\\n?/i, '')\n    .replace(/\\n?```\\s*$/i, '')\n    .trim();\n\n  try {\n    return JSON.parse(cleaned);\n  } catch (e2) {\n    // Try extracting JSON object from text\n    const jsonMatch = cleaned.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      try {\n        return JSON.parse(jsonMatch[0]);\n      } catch (e3) {\n        throw new Error(`Failed to parse AI output as JSON. Raw (first 500 chars): ${rawOutput.substring(0, 500)}`);\n      }\n    }\n    throw new Error(`No JSON object found in AI output. Raw (first 500 chars): ${rawOutput.substring(0, 500)}`);\n  }\n}"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        768,
-        -720
-      ],
-      "id": "f6958d8b-7d9f-467a-b847-fc22b5eca47f",
-      "name": "String json parser",
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "method": "POST",
+        "method": "=POST",
         "url": "http://host.docker.internal:3001/api/fake_ui/claim",
         "sendBody": true,
         "specifyBody": "json",
@@ -104,8 +90,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1088,
-        -736
+        1280,
+        -1120
       ],
       "id": "11471f21-36a1-4b18-b6c8-21c4294a5a96",
       "name": "Send data to playwright script",
@@ -127,7 +113,8 @@
         -800
       ],
       "id": "d2513041-2b85-41f5-9d8c-cff3b04d62d6",
-      "name": "Parse raw string into string JSON"
+      "name": "Parse raw string into string JSON",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -153,8 +140,8 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -816,
-        -64
+        -848,
+        -192
       ],
       "id": "3625b2f0-3cd3-47ec-bd04-07c01a545003",
       "name": "Loop Over Items"
@@ -191,7 +178,7 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        -160,
+        -304,
         -128
       ],
       "id": "f5347bc1-3a71-4f2e-86ba-1e68838a0be0",
@@ -209,8 +196,8 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        -160,
-        64
+        -304,
+        32
       ],
       "id": "ffa0ff6f-935d-4fbc-af42-217b607a5d15",
       "name": "Extract from PDF"
@@ -222,8 +209,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1472,
-        -176
+        -1568,
+        -528
       ],
       "id": "5aa49539-0e8e-465e-967f-00bc85813d26",
       "name": "Extract raw email data"
@@ -235,8 +222,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        64,
-        160
+        -80,
+        208
       ],
       "id": "dfd0dc43-9760-43df-bc00-10e6a628b645",
       "name": "Wrap pdf data into a single object"
@@ -248,8 +235,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        64,
-        -32
+        -80,
+        16
       ],
       "id": "836c36da-7bc8-43c6-9e29-84af1935510c",
       "name": "Wrap xlsx data into a single object"
@@ -270,13 +257,13 @@
     {
       "parameters": {
         "content": "## Email attachment extraction\nIt can handle xlsx and PDF file",
-        "height": 560,
-        "width": 704
+        "height": 608,
+        "width": 672
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -448,
+        -560,
         -192
       ],
       "id": "25671fc2-d56a-435e-8a74-0031c2f165e4",
@@ -286,13 +273,13 @@
       "parameters": {
         "content": "## Email with attachment processing\n",
         "height": 608,
-        "width": 1168,
+        "width": 1040,
         "color": "#3D4D51"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -592,
+        -560,
         -832
       ],
       "id": "c557cda9-1cf2-4c9e-859b-ea258a1ccdae",
@@ -353,7 +340,7 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        -384,
+        -528,
         -16
       ],
       "id": "06fa34af-d101-4b04-a683-9f2a05297f13",
@@ -372,7 +359,7 @@
       "typeVersion": 4.4,
       "position": [
         320,
-        -576
+        -592
       ],
       "id": "a8b2a0cc-83d9-43aa-b83c-19342fefe543",
       "name": "Product search1"
@@ -381,13 +368,13 @@
       "parameters": {
         "content": "## Saving report if all data matches",
         "height": 288,
-        "width": 688
+        "width": 1168
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        640,
-        -832
+        1200,
+        -1216
       ],
       "id": "0317c93f-c0b5-48a5-b3ef-9cd49025bd74",
       "name": "Sticky Note3"
@@ -399,11 +386,252 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1040,
-        -64
+        -1072,
+        -192
       ],
       "id": "5aeccc6c-7d14-42a0-a14e-84f910416928",
       "name": "Extract binary data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const { data } = $input.first().json;\n\nconsole.log(data);\n\nconst vendorNames = new Set();\nconst lotNumbers = new Set();\nconst vendorIds = new Set();\nconst purchaseOrderCode = new Set();\n\nfor (const { vendor, lotNumber, orderCode } of data.products ?? []) {\n  if (vendor?.name && vendor.name !== \"N/A\") {\n    vendorNames.add(vendor.name);\n  }\n\n  if (lotNumber && lotNumber !== \"N/A\") {\n    lotNumbers.add(lotNumber);\n  }\n\n  if (vendor?.id && vendor.id !== 0) {\n    vendorIds.add(vendor.id);\n  }\n\n  if (orderCode && orderCode !== 'N/A') {\n    purchaseOrderCode.add(orderCode);\n  }\n}\n\nreturn {\n  customerName: data.customer?.organization,\n  customerPhoneNumber: data.customer?.phone,\n  customerEmail: data.customer?.email,\n  issue: data.issues,\n  ticketId: data.creationResult?.ticketId,\n  ticketCreatedAt: data.creationResult?.createdAt,\n  followUp: \"none\",\n  vendorName: [...vendorNames].join(\", \"),\n  lotNumbers: [...lotNumbers].join(\", \"),\n  vendorIds: [...vendorIds].join(\", \"),\n  orderCodes: [...purchaseOrderCode].join(', ')\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        -1136
+      ],
+      "id": "32ce450f-f523-4586-8593-e05caf582676",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1OW1zW0xNSkyIx6KGDbB9dDvvrIfXGd_vnizSRTLnFqw",
+          "mode": "list",
+          "cachedResultName": "customer_claim",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1OW1zW0xNSkyIx6KGDbB9dDvvrIfXGd_vnizSRTLnFqw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "claims",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1OW1zW0xNSkyIx6KGDbB9dDvvrIfXGd_vnizSRTLnFqw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Customer name": "={{ $json.customerName }}",
+            "Customer email": "={{ $json.customerEmail }}",
+            "Phone number": "={{ $json.customerPhoneNumber }}",
+            "Issue reported": "={{ $json.issue }}",
+            "Purchase orders": "={{ $json.orderCodes }}",
+            "Vendor IDs": "={{ $json.vendorIds }}",
+            "Vendors": "={{ $json.vendorName }}",
+            "Ticket created at": "={{ $json.ticketCreatedAt }}",
+            "Ticket ID": "={{ $json.ticketId }}",
+            "Follow-up at": "={{ $json.followUp }}",
+            "Lot number": "={{ $json.lotNumbers }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Customer name",
+              "displayName": "Customer name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer email",
+              "displayName": "Customer email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone number",
+              "displayName": "Phone number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Issue reported",
+              "displayName": "Issue reported",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Purchase orders",
+              "displayName": "Purchase orders",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lot number",
+              "displayName": "Lot number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Vendors",
+              "displayName": "Vendors",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Vendor IDs",
+              "displayName": "Vendor IDs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Ticket ID",
+              "displayName": "Ticket ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Ticket created at",
+              "displayName": "Ticket created at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Follow-up at",
+              "displayName": "Follow-up at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1776,
+        -1136
+      ],
+      "id": "8ac5858d-78c0-4f39-bb3d-f14a4f914952",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleApi": {
+          "id": "GAdHHrIMqiQdfF4H",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "db419fec-2551-464b-95b1-4adbe11b7396",
+              "name": "saveedToGoogleSheet",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2048,
+        -1152
+      ],
+      "id": "32efc697-2ae1-4ae4-be23-ebf0e4eaa530",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "function safeParseJson(rawJson) {\n  // Try direct parse first\n  try {\n    return JSON.parse(rawJson);\n  } catch (e1) {\n    // Try stripping markdown code fences\n    const cleaned = rawJson\n      .replace(/^```(?:json)?\\s*\\n?/i, \"\")\n      .replace(/\\n?```\\s*$/i, \"\")\n      .trim();\n\n    try {\n      return JSON.parse(cleaned);\n    } catch (e2) {\n      // Try extracting JSON object from text\n      const jsonMatch = cleaned.match(/\\{[\\s\\S]*\\}/);\n      if (jsonMatch) {\n        try {\n          return JSON.parse(jsonMatch[0]);\n        } catch (e3) {\n          throw new Error(\n            `Failed to parse AI output as JSON. Raw (first 500 chars): ${rawJson.substring(0, 500)}`,\n          );\n        }\n      }\n      throw new Error(\n        `No JSON object found in AI output. Raw (first 500 chars): ${rawJson.substring(0, 500)}`,\n      );\n    }\n  }\n}\n\nfunction filterProduct(data) {\n  const verifiedProduct = data.products.filter(\n    (product) =>\n      product.existsInSystem ||\n      (product.verifiedFromAttachment.attachmentName !== \"N/A\" &&\n        product.verifiedFromAttachment.attachmentType),\n  );\n  return { ...data, products: verifiedProduct };\n}\n\nconst rawOutput = safeParseJson($input.first().json.output);\n\nreturn filterProduct(rawOutput);\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        -1008
+      ],
+      "id": "f6958d8b-7d9f-467a-b847-fc22b5eca47f",
+      "name": "Parse Json and filter data",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "fdd8a621-ab2d-46c7-80fb-8dea82fe1f87",
+              "leftValue": "={{ $json.products }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "array",
+                "operation": "lengthGt",
+                "rightType": "number"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        848,
+        -1104
+      ],
+      "id": "9f50e5e3-8576-4a3a-bec5-25d79c551d2b",
+      "name": "If1"
     }
   ],
   "pinData": {},
@@ -453,27 +681,22 @@
         ]
       ]
     },
-    "String json parser": {
+    "Send data to playwright script": {
       "main": [
         [
           {
-            "node": "Send data to playwright script",
+            "node": "Code in JavaScript",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Send data to playwright script": {
-      "main": [
-        []
-      ]
-    },
     "Parse raw string into string JSON": {
       "main": [
         [
           {
-            "node": "String json parser",
+            "node": "Parse Json and filter data",
             "type": "main",
             "index": 0
           }
@@ -625,6 +848,50 @@
           }
         ]
       ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Json and filter data": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Send data to playwright script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -633,7 +900,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "129f99e0-3f46-4aa7-b3b4-be4deae18102",
+  "versionId": "c0c0a9be-2a43-4d52-a7f7-6b4c3e685309",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "177add875a1f635cd6d08fc662846957ccba89ab9583c6fcf2fd625331457fee"
