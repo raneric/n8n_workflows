@@ -1,0 +1,76 @@
+{
+  "type": "object",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "required": [
+    "text",
+    "from",
+    "subject",
+    "date"
+  ],
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date time when the email whas received "
+    },
+    "from": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "address",
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "address": {
+                "type": "string",
+                "format": "email"
+              }
+            }
+          }
+        }
+      }
+    },
+    "text": {
+      "type": "string",
+      "format": "longtext",
+      "description": "The email content"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Sobject on the email"
+    },
+    "attachment_content": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "content",
+          "filename"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "contentEncoding": "base64",
+            "description": "The actual file data encoded as a Base64 string"
+          },
+          "filename": {
+            "type": "string",
+            "description": "Original filename with extension"
+          },
+          "contentType": {
+            "type": "string",
+            "description": "The MIME type of the file (e.g., application/pdf, image/png)"
+          }
+        }
+      },
+      "description": "List of attachment files containing actual embedded binary content."
+    }
+  }
+}

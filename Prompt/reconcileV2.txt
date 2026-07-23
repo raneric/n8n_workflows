@@ -1,0 +1,309 @@
+Your task is to match every product in `productExtractedFromEmail` and customerNameFromEmail with the best matching product in `produtsListFromSystem`.
+
+## Matching Process
+
+For EACH product in `productExtractedFromEmail`:
+
+1. Compare it against EVERY product in `produtsListFromSystem`.
+2. Evaluate every available field.
+3. Calculate the best overall match.
+4. Select the highest-confidence candidate.
+5. If no candidate has sufficient evidence, treat the product as unmatched.
+6. customerName field on each produtsListFromSystem must match customerNameFromEmail
+
+Do NOT stop after finding the first possible match. Every extracted product must be compared against every unmatched system product before making a decision.
+
+---
+
+# Matching Rules
+
+Treat fields differently depending on whether they are identifiers or descriptive information.
+
+## High Priority (Exact Match)
+
+These fields are strong identifiers.
+
+### itemCode
+
+- Exact match only.
+- Ignore if either value is `null`, empty, `"N/A"`, or undefined.
+
+### lotNumber
+
+- Exact match only.
+- Ignore if either value is missing.
+
+### orderCode
+
+- Exact match only.
+- Ignore if either value is missing.
+
+### orderDate
+
+- Exact match only.
+- Ignore if either value is missing.
+
+---
+
+## Medium Priority (Semantic Match)
+
+### productName
+
+Use semantic matching instead of strict string comparison.
+
+Examples of valid matches:
+
+- Disposable Syringe
+  ↔ Disposable Syringe 20mL
+
+- Surgical Mask
+  ↔ Surgical Mask
+
+- Peritoneal Dialysis Catheter
+  ↔ Peritoneal Dialysis Catheter
+
+The comparison should tolerate:
+
+- spelling mistakes
+- OCR errors
+- abbreviations
+- singular/plural differences
+- capitalization differences
+- punctuation differences
+- additional descriptors (size, model, capacity, packaging)
+
+However, do NOT match different products.
+
+Example:
+
+Pleural Drainage Kit
+
+≠
+
+Peritoneal Dialysis Catheter
+
+---
+
+### vendor
+
+Use semantic comparison.
+
+Ignore:
+
+- capitalization
+- punctuation
+- company suffixes (Ltd, LLC, Inc., etc.)
+
+If the extracted vendor is `"N/A"` or missing, ignore this field.
+
+---
+
+## Supporting Evidence
+
+If available, also compare:
+
+- quantityOrdered
+- quantityReceived
+- quantityBilled
+- customerName
+- documentNumber
+
+These fields should increase confidence but must NEVER override a strong product mismatch.
+
+---
+
+## Handling Missing Values
+
+Treat the following values as missing:
+
+- null
+- ""
+- "N/A"
+- undefined
+
+Missing values should neither increase nor decrease the confidence score.
+
+---
+
+# Selecting the Best Match
+
+When multiple candidates are available, rank them using the following priority:
+
+1. Exact orderCode
+2. Exact itemCode
+3. Exact lotNumber
+4. Highest semantic similarity of productName
+5. Matching vendor
+6. Matching quantities
+7. Matching customerName
+8. Matching documentNumber
+
+Always choose the highest-ranked candidate.
+
+Never force a match if confidence is low.
+
+---
+
+# Rejecting Matches
+
+A product should remain unmatched if:
+- Customer name doesn't match
+- the product names describe different medical products
+- there is insufficient evidence
+- confidence is low
+
+Do not guess.
+
+---
+
+# Output Construction
+
+The final output must be a single JSON array of merged product objects.
+
+Return exactly one object for every product in `productExtractedFromEmail`.
+
+---
+
+## If a Match Is Found
+
+Create a merged product object.
+
+Merge using the following rules:
+
+1. Start with the matched product from `produtsListFromSystem`.
+
+2. For fields that exist in both objects, ALWAYS keep the value from the system product.
+
+Examples:
+
+- itemCode
+- productName
+- vendor
+- documentNumber
+- orderCode
+- orderDate
+- lotNumber
+- quantityOrdered
+- quantityReceived
+- quantityBilled
+
+must all come from the matched system product.
+
+3. Copy every field that exists only in the extracted email product into the merged object.
+
+Examples include (but are not limited to):
+
+- lineNumber
+- existsInSystem
+- verifiedFromAttachment
+- status
+- comments
+- any additional email-specific fields
+
+4. Set `existsInSystem` to `true` if one or more matching products are found in `produtsListFromSystem`, even if multiple equally good matches exist.
+
+5. If no matching product is found put false
+
+The final object should contain the complete system product enriched with the additional information extracted from the email.
+
+---
+
+## If Multiple Candidates Are Equally Good
+
+If two or more candidates have the same confidence score and cannot be uniquely identified (for example duplicate system records), do not arbitrarily choose one.
+
+Instead:
+
+- Merge the extracted product with the first matching system record.
+- Preserve all fields according to the merge rules above.
+- Replace the `comments` field with:
+
+```
+Multiple product match need confirmation from customer
+```
+
+- Add the following field:
+
+```json
+"requiresCustomerConfirmation": true
+```
+
+This indicates that customer confirmation is required before the product can be uniquely identified.
+
+---
+
+## If No Match Is Found
+
+Return the original product from `productExtractedFromEmail`.
+
+Also include:
+
+```json
+"requiresCustomerConfirmation": false
+```
+
+Do not invent or modify any system data.
+
+# Reconciliation Result
+
+In addition to the merged product list, return a `reconciliationResult` object that summarizes the reconciliation outcome.
+
+The object must contain:
+
+- `totalProduct`
+  - Total number of products in `productExtractedFromEmail`.
+
+- `totalReconciledProduct`
+  - Total number of products that have **exactly one unique match** in `produtsListFromSystem.unmatchedProducts`.
+
+- `success`
+  - `true` if every extracted product has exactly one unique match.
+  - `false` otherwise.
+
+Products requiring customer confirmation because multiple equally good matches exist are **NOT** considered reconciled.
+
+Products with no match are also **NOT** considered reconciled.
+
+Example:
+
+```json
+{
+  "reconciliationResult": {
+    "totalProduct": 3,
+    "totalReconciledProduct": 2,
+    "success": false
+  }
+}
+```
+
+---
+
+# Final Output Requirements
+
+Return a single JSON object with the following structure:
+
+```json
+{
+  "products": [
+    {
+      // merged product object
+    }
+  ],
+  "reconciliationResult": {
+    "totalProduct": 0,
+    "totalReconciledProduct": 0,
+    "success": false
+  }
+}
+```
+
+Rules:
+
+- `products` must contain exactly one object for every product in `productExtractedFromEmail`.
+- `totalProduct` must equal the length of `productExtractedFromEmail`.
+- `totalReconciledProduct` counts only products with exactly one unique match.
+- `success` is `true` only when:
+  ```
+  totalReconciledProduct == totalProduct
+  ```
+- Return valid JSON only. Do not include explanations, markdown, reasoning, or additional text.

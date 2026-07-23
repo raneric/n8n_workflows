@@ -1,0 +1,74 @@
+{
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "required": [
+    "success",
+    "data",
+    "issues"
+  ],
+  "properties": {
+    "data": {
+      "type": "object",
+      "required": [
+        "products"
+      ],
+      "properties": {
+        "products": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "itemCode",
+              "productName",
+              "vendor",
+              "customerName",
+              "orderCode",
+              "existsInSystem"
+            ],
+            "properties": {
+              "vendor": {
+                "type": "string"
+              },
+              "itemCode": {
+                "type": "string"
+              },
+              "orderCode": {
+                "type": "string"
+              },
+              "productName": {
+                "type": "string"
+              },
+              "customerName": {
+                "type": "string"
+              },
+              "existsInSystem": {
+                "type": "boolean"
+              },
+              "existInAttachment": {
+                "type": "object",
+                "properties": {
+                  "attachmentName": {
+                    "type": "string"
+                  },
+                  "attachmentType": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "issues": {
+      "type": "string"
+    },
+    "success": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

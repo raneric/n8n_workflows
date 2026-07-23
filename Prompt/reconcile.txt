@@ -1,0 +1,294 @@
+Your task is to match every product in `productExtractedFromEmail` with the best matching product in `produtsListFromSystem`.
+
+## Matching Process
+
+For EACH product in `productExtractedFromEmail`:
+
+1. Compare it against EVERY product in `produtsListFromSystem`.
+2. Evaluate all fields.
+3. Calculate the best overall match.
+4. Return only the highest-confidence match.
+5. If no candidate has sufficient evidence, return `null`.
+
+Do NOT stop after finding the first possible match.
+
+---
+
+## Matching Rules
+
+Treat fields differently depending on whether they are identifiers or descriptive information.
+
+### High Priority (Exact Match)
+
+These fields are strong identifiers.
+
+- itemCode
+    - Exact match only.
+    - Ignore if either value is "N/A", null, or empty.
+
+- lotNumber
+    - Exact match only.
+    - Ignore if either value is missing.
+
+- orderCode
+    - Exact match only.
+    - Ignore if missing.
+
+- orderDate
+    - Exact match only.
+    - Ignore if missing.
+
+---
+
+### Medium Priority (Semantic Match)
+
+These fields should use semantic similarity instead of exact string equality.
+
+#### productName
+
+Use semantic matching.
+
+Examples of valid matches:
+
+- Disposable Syringe
+    ↔ Disposable Syringe 20mL
+
+- Surgical Mask
+    ↔ Surgical Mask
+
+- Peritoneal Dialysis Catheter
+    ↔ Peritoneal Dialysis Catheter
+
+Also tolerate:
+
+- spelling mistakes
+- abbreviations
+- singular/plural
+- punctuation differences
+- size/model descriptors
+- capitalization
+
+Do NOT match products that represent different medical devices.
+
+Example:
+
+Pleural Drainage Kit
+≠
+Peritoneal Dialysis Catheter
+
+---
+
+#### vendor
+
+Use semantic comparison.
+
+Ignore differences in:
+
+- capitalization
+- punctuation
+- company suffixes (Ltd, Inc, LLC)
+
+If the extracted vendor is "N/A", ignore this field.
+
+---
+
+### Supporting Evidence
+
+If available, also compare:
+
+- quantityOrdered
+- quantityReceived
+- quantityBilled
+- customerName
+- documentNumber
+
+These fields should increase confidence but should NOT override a strong product mismatch.
+
+---
+
+## Handling Missing Values
+
+Treat these values as missing:
+
+- null
+- ""
+- "N/A"
+- undefined
+
+Missing values should neither increase nor decrease confidence.
+
+---
+
+## Selecting the Best Match
+
+When multiple candidates are similar:
+
+Prefer the candidate with:
+
+1. Exact orderCode
+2. Exact itemCode
+3. Exact lotNumber
+4. Highest semantic similarity of productName
+5. Matching vendor
+6. Matching quantities
+
+If multiple candidates remain equally good (duplicates), return all.
+
+---
+
+## Rejecting Matches
+
+Return `null` if:
+
+- product names describe different products
+- confidence is low
+- only weak evidence exists
+
+Never force a match.
+
+---
+
+## Output Construction
+
+The final output must be a single array of merged product objects.
+
+For each product in `productExtractedFromEmail`:
+
+### If a match is found
+
+Create a new product object by merging the extracted product with the matched product.
+
+Merge rules:
+
+1. Start with the matched product from `produtsListFromSystem.unmatchedProducts`.
+2. For fields that exist in both objects, ALWAYS keep the value from the system product.
+3. For fields that exist only in `productExtractedFromEmail`, copy them into the merged object.
+4. Preserve all system identifiers such as:
+   - itemCode
+   - documentNumber
+   - orderCode
+   - orderDate
+   - lotNumber
+   - vendor
+   - quantities
+5. Preserve all extracted email information that does not exist in the system product, including fields such as:
+   - lineNumber
+   - verifiedFromAttachment
+   - status
+   - comments
+   - or any additional email-specific fields.
+
+6. Set `existsInSystem` to `true` if one or more matching products are found in `produtsListFromSystem`, even if multiple equally good matches exist.
+
+7. If no matching product is found put false
+The result should be a single merged product containing information from both sources.
+
+---
+
+### If multiple equally good matches exist
+
+If two or more candidates are equally likely matches (for example duplicated records with the same confidence), do NOT choose one arbitrarily.
+
+Instead:
+
+- Keep the information from `productExtractedFromEmail`.
+- Merge it with the first matching system product.
+- Set the `comments` field to:
+
+```
+Multiple product match need confirmation from customer
+```
+
+- Add:
+
+```json
+"requiresCustomerConfirmation": true
+```
+
+This indicates that customer confirmation is required before the product can be uniquely matched.
+
+---
+
+### If no match is found
+
+Return the original product from `productExtractedFromEmail`.
+
+Additionally set:
+
+```json
+"requiresCustomerConfirmation": false
+```
+
+Do not invent or modify any system data.
+
+---
+
+## Final Output
+
+Return only a JSON array of merged product objects.
+
+Each object should contain:
+
+- all fields from the matched system product
+- all additional fields from the extracted email product
+- any matching metadata (`matchedProduct`, `requiresCustomerConfirmation`, etc.)
+
+Do not return explanations, reasoning, confidence scores, or any additional text outside the JSON array.
+
+JSON schama output
+
+{
+  "type": "object",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "required": ["products", "reconciliationResult"],
+  "properties": {
+    "product": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "lineNumber": { "type": "number" },
+          "itemCode": { "type": "string" },
+          "productName": { "type": "string" },
+          "vendor": { "type": "string" },
+          "documentNumber": { "type": "string" },
+          "orderCode": { "type": "string" },
+          "orderDate": { "type": "string" },
+          "lotNumber": { "type": "string" },
+          "quantityOrdered": { "type": "number" },
+          "quantityReceived": { "type": "number" },
+          "quantityBilled": { "type": "number" },
+          "comments": { "type": "string" },
+          "status": { "type": "string" },
+          "existsInSystem": { "type": "boolean" },
+          "verifiedFromAttachment": {
+            "type": "object",
+            "properties": {
+              "attachmentType": { "type": "string" },
+              "attachmentName": { "type": "string" }
+            }
+          },
+          "requiresCustomerConfirmation": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "reconciliationResult": {
+      "type": "object",
+      "properties": {
+        "totalProduct": {
+          "type": "integer"
+        },
+        "totalReconciledProduct": {
+          "type": "integer"
+        },
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": ["totalProduct", "totalReconciledProduct", "success"],
+      "additionalProperties": false
+    }
+  }
+}

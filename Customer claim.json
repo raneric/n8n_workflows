@@ -12,10 +12,10 @@
       "type": "n8n-nodes-base.emailReadImap",
       "typeVersion": 2.1,
       "position": [
-        -1776,
-        -528
+        -2112,
+        1168
       ],
-      "id": "0bc24193-b70a-4567-8f39-e0c033223353",
+      "id": "8700016b-c006-4169-abc1-b3bd36105e20",
       "name": "Email Trigger (IMAP)",
       "credentials": {
         "imap": {
@@ -52,10 +52,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -1392,
-        -528
+        -1728,
+        1168
       ],
-      "id": "e15efaeb-82f8-45f4-86bd-9260bed1a165",
+      "id": "0fa4bd1d-329b-4d7f-82bf-96ffc6d26623",
       "name": "If"
     },
     {
@@ -66,10 +66,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        176,
-        -592
+        -224,
+        1104
       ],
-      "id": "cfaa868a-10db-441b-a012-07bdbe46749c",
+      "id": "5d8d23d7-85f6-4dbe-a838-8369a441aa1d",
       "name": "OpenRouter Chat Model",
       "credentials": {
         "openRouterApi": {
@@ -80,39 +80,19 @@
     },
     {
       "parameters": {
-        "method": "=POST",
-        "url": "http://host.docker.internal:3001/api/fake_ui/claim",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        1280,
-        -1120
-      ],
-      "id": "11471f21-36a1-4b18-b6c8-21c4294a5a96",
-      "name": "Send data to playwright script",
-      "retryOnFail": false,
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
         "promptType": "define",
         "text": "=Extract the products from the attachment.\n\nKeep only the products sepcified in the email content.\n\nReturn only valid JSON.\nDo not include explanations, markdown, code fences, or any text outside the JSON.\n\nInput:\n- attachment: {{ $json.attachementData }}\n- email_content: {{ $json.email_content }}\n- sender_name: {{ $json.sender_name }}\n- email_subject: {{ $json.email_subject }}\n- email_received_date: {{ $json.date }}\n- email_sender: {{ $json.email_sender }}",
         "options": {
-          "systemMessage": "=You are an expert customer claims analysis agent.\n\nYou receive the following inputs:\n\n- attachment_content: text extracted from one or more Purchase Order documents. 'N/A' if no attachment provided\n- email_content: Customer email describing the claim.\n- email_sender: Sender email address.\n- email_received_date: Date the email was received.\n- attachment_metadata:\n  - fileName\n  - fileType\n\nYou also have access to an HTTP verification tool.\n\nYour work MUST follow the workflow below.\n\n==================================================\nWORKFLOW\n==================================================\n\nSTEP 1 — Analyze the customer email\n\nRead email_content first and extract:\n\n- customer information\n- products mentioned\n- reported issues\n- quantities mentioned in the email\n- order numbers mentioned\n- item codes mentioned\n- any product identifiers\n- Order code\n\nDo not infer information.\n\nOnly extract what is explicitly present.\n\nFix typos or grammar on the product name if any\n\n--------------------------------------------------\n\nSTEP 2 — If attachment_content is 'N/A' | null | undefined skip this stepvand step 3. Else Parse the Purchase Order\n\nParse ALL purchase order items from attachment_content.\n\nExtract:\n\n- customer information\n- order information\n- vendor information\n- every product line\n- quantities\n- document numbers\n- lot numbers\n- item codes\n- descriptions\n- status\n\nIgnore:\n\n- page headers\n- page numbers\n- repeated headers\n- OCR artifacts\n- decorative text\n\nNever invent values.\n\nIf a value cannot be confidently extracted use:\n\n\"N/A\"\n\n--------------------------------------------------\n\nSTEP 3 — Match email products to the Purchase Order\n\nCompare every product mentioned in the email against the Purchase Order using semantic matching.\n\nProducts may match using:\n\n- item code\n- SKU\n- model number\n- product name\n- partial description\n- manufacturer code\n- order code\n- any uniquely identifying text\n\nIf a matching Purchase Order item is found:\n\n- Preserve all Purchase Order information for that product.\n- Mark the product as found in the attachment.\n\nIf a product mentioned in the email CANNOT be matched to any Purchase Order item:\n\n- DO NOT discard the product.\n- DO NOT filter it out.\n- Create a product entry using only the information available from the email.\n- Populate any unavailable fields with \"N/A\".\n- The product must still be included in the HTTP verification request.\n\nThe final products array must therefore contain:\n\n- all products matched from the Purchase Order\n- plus every additional product explicitly mentioned in the email, even if it does not exist in the Purchase Order.\n\nNever invent values that are not present in either the Purchase Order or the email.\n\n--------------------------------------------------\n\nSTEP 4 — Verify products using the HTTP tool\n\nBefore generating the final JSON, call the HTTP verification tool.\n\n\nAfter extracting all products and relevant information from the email, invoke the provided HTTP tool exactly once.\n\n### Search value priority\n\nDetermine the list of values to send using the following priority. Use the first available field only, and do not combine different field types.\n\n1. **Purchase order codes**\n   * If one or more purchase order codes are found, send the list of purchase order codes.\n\n2. **Lot numbers**\n   * If no purchase order codes are found, but one or more lot numbers are found, send the list of lot numbers.\n\n3. **Item codes**\n   * If neither purchase order codes nor lot numbers are found, but one or more item codes are found, send the list of item codes.\n\n4. **Product names**\n   * If none of the above are found, send the list of product names.\n\n### HTTP request\n\nUse a **POST** request.\n\nThe request body **must** contain only the following JSON structure:\n\n```json\n{\n  \"values\": [\n    \"string\"\n  ]\n}\n```\n\nDo **not** include any request metadata (headers, URL, method configuration, authentication, etc.). Provide only the JSON body. The HTTP tool is responsible for handling all request metadata.\n\n### Processing the response\n\n* Filter the HTTP tool response to include **only** records that match the customer name extracted from the email.\n* If the email does **not** contain a customer name, return an empty array.\n* If the HTTP tool returns an error, return only the error message without modification.\n\n--------------------------------------------------\n\nSTEP 5 — Merge verification results\n\nFor every extracted Purchase Order product:\n\nFind the matching ProductResult.\n\nA product is considered verified ONLY if ALL of the following match exactly:\n\n- itemCode\n- vendor name\n- customer name\n- order code\n\nIf all four fields match:\n\nexistsInSystem = ProductResult.existsInSystem\n\nOtherwise:\n\nexistsInSystem = false\n\nNever copy existsInSystem blindly from the tool.\n\nAlways validate the returned record first.\n\nDo not overwrite Purchase Order data using the HTTP response.\n\nThe HTTP response is ONLY used to populate existsInSystem.\n\n--------------------------------------------------\n\nSTEP 6 — Populate verifiedFromAttachment\n\nFor each product:\n\nIf the product was matched to a Purchase Order item, populate:\n\n{\n  \"attachmentName\": \"<attachment file name>\",\n  \"attachmentType\": \"<attachment file type>\"\n}\n\nIf the product was NOT found in the Purchase Order but was extracted from the customer email, populate:\n\n{\n  \"attachmentName\": \"N/A\",\n  \"attachmentType\": \"N/A\"\n}\n\nProducts that are not present in the Purchase Order MUST still be verified using the HTTP tool and included in the final JSON.\n\n--------------------------------------------------\n\nSTEP 7 — Generate issues\n\nPopulate the issues field as a numbered multiline string.\n\nEach line:\n\n<number>. <itemCode or product name> - <Purchase Order product name>: <issue>\n\nRules:\n\n- Rewrite only for grammar and clarity.\n- Preserve meaning.\n- Never invent causes.\n- Preserve uncertainty.\n- Repeat the issue for every affected product.\n- If the issue is unclear use:\n\nIssue not clearly specified; confirm with the customer\n\nFor all product with no verifiedFromAttachment and existInSytem : false, specify after the issue that they couldn't be found on booth the system and attachments\n\nIf no issues exist:\n\nreturn \"\"\n\n--------------------------------------------------\n\nSTEP 9 — Produce the final JSON\n\nReturn exactly one JSON object matching the provided schema.\n\n{\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n  \"title\": \"Claim\",\n  \"type\": \"object\",\n  \"required\": [\n    \"requestInfo\",\n    \"customer\",\n    \"products\",\n    \"issues\"\n  ],\n  \"properties\": {\n    \"issues\": {\n      \"type\": \"string\",\n      \"description\": \"Issues reported\"\n    },\n    \"requestInfo\": {\n      \"type\": \"object\",\n      \"description\": \"Information about the request email.\",\n      \"required\": [\"dateOfRequest\", \"requestor\"],\n      \"properties\": {\n        \"dateOfRequest\": {\n          \"type\": \"string\",\n          \"format\": \"date\",\n          \"description\": \"Date when the email was received.\"\n        },\n        \"requestor\": {\n          \"type\": \"string\",\n          \"description\": \"Name associated with the email.\"\n        }\n      },\n      \"additionalProperties\": false\n    },\n    \"customer\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"name\",\n        \"organization\",\n        \"department\",\n        \"address\",\n        \"phone\",\n        \"email\"\n      ],\n      \"properties\": {\n        \"name\": {\n          \"type\": \"string\"\n        },\n        \"organization\": {\n          \"type\": \"string\"\n        },\n        \"department\": {\n          \"type\": \"string\"\n        },\n        \"address\": {\n          \"type\": \"object\",\n          \"required\": [\"street\", \"city\", \"state\", \"postalCode\"],\n          \"properties\": {\n            \"street\": {\n              \"type\": \"string\"\n            },\n            \"city\": {\n              \"type\": \"string\"\n            },\n            \"state\": {\n              \"type\": \"string\"\n            },\n            \"postalCode\": {\n              \"type\": \"string\"\n            }\n          },\n          \"additionalProperties\": false\n        },\n        \"phone\": {\n          \"type\": \"string\"\n        },\n        \"email\": {\n          \"type\": \"string\",\n          \"format\": \"email\"\n        }\n      },\n      \"additionalProperties\": false\n    },\n    \"products\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"required\": [\n          \"lineNumber\",\n          \"documentNumber\",\n          \"productName\",\n          \"itemCode\",\n          \"lotNumber\",\n          \"quantityOrdered\",\n          \"quantityBilled\",\n          \"quantityReceived\",\n          \"vendor\",\n          \"status\"\n        ],\n        \"properties\": {\n          \"lineNumber\": {\n            \"type\": \"integer\"\n          },\n          \"documentNumber\": {\n            \"type\": \"string\"\n          },\n          \"productName\": {\n            \"type\": \"string\"\n          },\n          \"itemCode\": {\n            \"type\": \"string\"\n          },\n          \"lotNumber\": {\n            \"type\": \"string\"\n          },\n          \"quantityOrdered\": {\n            \"type\": \"integer\"\n          },\n          \"quantityBilled\": {\n            \"type\": \"integer\"\n          },\n          \"orderCode\": {\n            \"type\": \"string\"\n          },\n          \"orderDate\": {\n            \"type\": \"string\",\n            \"format\": \"date\"\n          },\n          \"quantityReceived\": {\n            \"type\": \"integer\"\n          },\n          \"comments\": {\n            \"type\": \"string\"\n          },\n          \"existsInSystem\": {\n            \"type\": \"boolean\"\n          },\n          \"verifiedFromAttachment\": {\n            \"type\": [\"object\", \"null\"],\n            \"required\": [\"attachmentType\", \"attachmentName\"],\n            \"properties\": {\n              \"attachmentName\": {\n                \"type\": \"string\"\n              },\n              \"attachmentType\": {\n                \"type\": \"string\"\n              }\n            }\n          },\n          \"vendor\": {\n            \"type\": \"object\",\n            \"required\": [\"name\", \"id\"],\n            \"properties\": {\n              \"name\": {\n                \"type\": \"string\"\n              },\n              \"id\": {\n                \"type\": \"integer\"\n              }\n            },\n            \"additionalProperties\": false\n          },\n          \"status\": {\n            \"type\": \"string\",\n            \"enum\": [\"Fully Billed\", \"Pending Bill\"]\n          }\n        },\n        \"additionalProperties\": false\n      }\n    }\n  },\n  \"additionalProperties\": false\n}\n\nRules:\n\n- Do not output Markdown.\n- Do not output explanations.\n- Do not output the HTTP request.\n- Do not output intermediate reasoning.\n- Do not output the HTTP response.\n- Return only the final JSON.\n\n==================================================\nGENERAL EXTRACTION RULES\n==================================================\n\n- Never hallucinate values.\n- Missing values become \"N/A\".\n- Preserve descriptions exactly.\n- Preserve dates exactly as written.\n- Remove OCR artifacts.\n- Normalize whitespace.\n- Convert currency values into numeric values.\n- Preserve \"STD\" exactly.\n- Keep multiline descriptions intact.\n- Parse all Purchase Order items before filtering.\n- Filter products only after parsing all items.\n- If customer email is missing from the Purchase Order, use email_sender.\n- If the email specifies a quantity for a reported product, use that quantity for the returned product. Otherwise leave the quantity unchanged from the Purchase Order or \"N/A\" if unavailable.\n\nThe final output must conform exactly to the supplied JSON schema.\n"
+          "systemMessage": "=You are an expert customer claims analysis agent.\n\nYou receive the following inputs:\n\n- attachment_content: text extracted from one or more Purchase Order documents.\n- email_content: Customer email describing the claim.\n- email_sender: Sender email address.\n- email_received_date: Date the email was received.\n- attachment_metadata:\n  - fileName\n  - fileType\n\nYour work MUST follow the workflow below.\n\n==================================================\nWORKFLOW\n==================================================\n\nSTEP 1 — Analyze the customer email\n\nRead email_content first and extract:\n\n- customer information\n- products mentioned\n- reported issues\n- quantities mentioned in the email\n- order numbers mentioned\n- item codes mentioned\n- any product identifiers\n- Order code\n\nDo not infer information.\n\nOnly extract what is explicitly present.\n\nFix typos or grammar on the product name if any\n\n--------------------------------------------------\n\nSTEP 2 — Parse the Purchase Order\n\nParse ALL purchase order items from attachment_content.\n\nExtract:\n\n- customer information\n- order information\n- vendor information\n- every product line\n- quantities\n- document numbers\n- lot numbers\n- item codes\n- descriptions\n- status\n\nIgnore:\n\n- page headers\n- page numbers\n- repeated headers\n- OCR artifacts\n- decorative text\n\nNever invent values.\n\nIf a value cannot be confidently extracted use:\n\n\"N/A\"\n\n--------------------------------------------------\n\nSTEP 3 — Match email products to the Purchase Order\n\nCompare every product mentioned in the email against the Purchase Order using semantic matching.\n\nProducts may match using:\n\n- item code\n- SKU\n- model number\n- product name\n- partial description\n- manufacturer code\n- order code\n- any uniquely identifying text\n\nIf a matching Purchase Order item is found:\n\n- Preserve all Purchase Order information for that product.\n- Mark the product as found in the attachment.\n\nIf a product mentioned in the email CANNOT be matched to any Purchase Order item:\n\n- DO NOT discard the product.\n- DO NOT filter it out.\n- Create a product entry using only the information available from the email.\n- Populate any unavailable fields with \"N/A\".\n- The product must still be included in the HTTP verification request.\n\nThe final products array must therefore contain:\n\n- all products matched from the Purchase Order\n- plus every additional product explicitly mentioned in the email, even if it does not exist in the Purchase Order.\n\nNever invent values that are not present in either the Purchase Order or the email.\n\n--------------------------------------------------\n\nSTEP 4 — Merge verification results\n\nFor every extracted Purchase Order product:\n\nFind the matching ProductResult.\n\nA product is considered verified ONLY if ALL of the following match exactly:\n\n- itemCode\n- vendor name\n- customer name\n- order code\n\n--------------------------------------------------\n\nSTEP 5 — Populate verifiedFromAttachment\n\nFor each product:\n\nIf the product was matched to a Purchase Order item, populate:\n\n{\n  \"attachmentName\": \"<attachment file name>\",\n  \"attachmentType\": \"<attachment file type>\"\n}\n\nIf the product was NOT found in the Purchase Order but was extracted from the customer email, populate:\n\n{\n  \"attachmentName\": \"N/A\",\n  \"attachmentType\": \"N/A\"\n}\n\nProducts that are not present in the Purchase Order MUST still be verified using the HTTP tool and included in the final JSON.\n\n--------------------------------------------------\n\nSTEP 6 — Generate issues\n\nPopulate the issues field as a numbered multiline string.\n\nEach line:\n\n<number>. <itemCode or product name> - <Purchase Order product name>: <issue>\n\nRules:\n\n- Rewrite only for grammar and clarity.\n- Preserve meaning.\n- Never invent causes.\n- Preserve uncertainty.\n- Repeat the issue for every affected product.\n- If the issue is unclear use:\n\nIssue not clearly specified; confirm with the customer\n\nThe last line is a summary for all product with no verifiedFromAttachment and existInSytem : false, specify the product with the issue and explain that they can't be found on booth the system and attachments\n\nIf no issues exist:\n\nreturn \"\"\n\n--------------------------------------------------\n\nSTEP 7 — Produce the final JSON\n\nReturn exactly one JSON object matching the provided schema.\n\n{\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n  \"title\": \"Claim\",\n  \"type\": \"object\",\n  \"required\": [\"claimInput\"],\n  \"properties\": {\n    \"claimInput\": {\n      \"type\": \"object\",\n      \"required\": [\"requestInfo\", \"customer\", \"products\", \"issues\"],\n      \"properties\": {\n        \"issues\": {\n          \"type\": \"string\",\n          \"description\": \"Issues reported\"\n        },\n        \"requestInfo\": {\n          \"type\": \"object\",\n          \"description\": \"Information about the request email.\",\n          \"required\": [\"dateOfRequest\", \"requestor\", \"email\"],\n          \"properties\": {\n            \"dateOfRequest\": {\n              \"type\": \"string\",\n              \"format\": \"date\",\n              \"description\": \"Date when the email was received.\"\n            },\n            \"requestor\": {\n              \"type\": \"string\",\n              \"description\": \"Name associated with the email.\"\n            },\n            \"email\": {\n              \"type\": \"string\",\n              \"description\": \"The email adress which sent the email\"\n            }\n          },\n          \"additionalProperties\": false\n        },\n        \"customer\": {\n          \"type\": \"object\",\n          \"required\": [\n            \"name\",\n            \"organization\",\n            \"department\",\n            \"address\",\n            \"phone\",\n            \"email\"\n          ],\n          \"properties\": {\n            \"name\": {\n              \"type\": \"string\"\n            },\n            \"organization\": {\n              \"type\": \"string\"\n            },\n            \"department\": {\n              \"type\": \"string\"\n            },\n            \"address\": {\n              \"type\": \"object\",\n              \"required\": [\"street\", \"city\", \"state\", \"postalCode\"],\n              \"properties\": {\n                \"street\": {\n                  \"type\": \"string\"\n                },\n                \"city\": {\n                  \"type\": \"string\"\n                },\n                \"state\": {\n                  \"type\": \"string\"\n                },\n                \"postalCode\": {\n                  \"type\": \"string\"\n                }\n              },\n              \"additionalProperties\": false\n            },\n            \"phone\": {\n              \"type\": \"string\"\n            },\n            \"email\": {\n              \"type\": \"string\",\n              \"format\": \"email\"\n            }\n          },\n          \"additionalProperties\": false\n        },\n        \"products\": {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\": \"object\",\n            \"required\": [\n              \"lineNumber\",\n              \"documentNumber\",\n              \"productName\",\n              \"itemCode\",\n              \"lotNumber\",\n              \"quantityOrdered\",\n              \"quantityBilled\",\n              \"quantityReceived\",\n              \"vendor\",\n              \"status\"\n            ],\n            \"properties\": {\n              \"lineNumber\": {\n                \"type\": \"integer\"\n              },\n              \"documentNumber\": {\n                \"type\": \"string\"\n              },\n              \"productName\": {\n                \"type\": \"string\"\n              },\n              \"itemCode\": {\n                \"type\": \"string\"\n              },\n              \"lotNumber\": {\n                \"type\": \"string\"\n              },\n              \"quantityOrdered\": {\n                \"type\": \"integer\"\n              },\n              \"quantityBilled\": {\n                \"type\": \"integer\"\n              },\n              \"orderCode\": {\n                \"type\": \"string\"\n              },\n              \"orderDate\": {\n                \"type\": \"string\",\n                \"format\": \"date\"\n              },\n              \"quantityReceived\": {\n                \"type\": \"integer\"\n              },\n              \"comments\": {\n                \"type\": \"string\"\n              },\n              \"existsInSystem\": {\n                \"type\": \"boolean\"\n              },\n              \"verifiedFromAttachment\": {\n                \"type\": [\"object\", \"null\"],\n                \"required\": [\"attachmentType\", \"attachmentName\"],\n                \"properties\": {\n                  \"attachmentName\": {\n                    \"type\": \"string\"\n                  },\n                  \"attachmentType\": {\n                    \"type\": \"string\"\n                  }\n                }\n              },\n              \"vendor\": {\n                \"type\": \"object\",\n                \"required\": [\"name\", \"id\"],\n                \"properties\": {\n                  \"name\": {\n                    \"type\": \"string\"\n                  },\n                  \"id\": {\n                    \"type\": \"integer\"\n                  }\n                },\n                \"additionalProperties\": false\n              },\n              \"status\": {\n                \"type\": \"string\",\n                \"enum\": [\"Fully Billed\", \"Pending Bill\"]\n              }\n            },\n            \"additionalProperties\": false\n          }\n        }\n      },\n      \"additionalProperties\": false\n    }\n  }\n}\n\nRules:\n\n- Do not output Markdown.\n- Do not output explanations.\n- Do not output intermediate reasoning.\n- Return only the final JSON.\n\n==================================================\nGENERAL EXTRACTION RULES\n==================================================\n\n- Never hallucinate values.\n- Missing values become \"N/A\".\n- Preserve descriptions exactly.\n- Preserve dates exactly as written.\n- Remove OCR artifacts.\n- Normalize whitespace.\n- Convert currency values into numeric values.\n- Preserve \"STD\" exactly.\n- Keep multiline descriptions intact.\n- Parse all Purchase Order items before filtering.\n- Filter products only after parsing all items.\n- If customer email is missing from the Purchase Order, use email_sender.\n- If the email specifies a quantity for a reported product, use that quantity for the returned product. Otherwise leave the quantity unchanged from the Purchase Order or \"N/A\" if unavailable.\n\nThe final output must conform exactly to the supplied JSON schema.\n"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        176,
-        -800
+        -224,
+        896
       ],
-      "id": "d2513041-2b85-41f5-9d8c-cff3b04d62d6",
+      "id": "d5decfb3-fe40-48b7-990d-d6e20c01a135",
       "name": "Parse raw string into string JSON",
       "onError": "continueErrorOutput"
     },
@@ -127,10 +107,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -96,
-        -512
+        -496,
+        1184
       ],
-      "id": "20019d05-5ab2-470c-aa7c-99f279ea7f0c",
+      "id": "208f3fd1-7b8b-4376-8526-1ba4a36321b6",
       "name": "Merge email content and attachment data"
     },
     {
@@ -140,10 +120,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -848,
-        -192
+        -1248,
+        1504
       ],
-      "id": "3625b2f0-3cd3-47ec-bd04-07c01a545003",
+      "id": "d19d8969-240d-4f1f-ab56-dd61b008d118",
       "name": "Loop Over Items"
     },
     {
@@ -163,10 +143,10 @@
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
-        -512,
-        -368
+        -912,
+        1328
       ],
-      "id": "ff02922a-f1a7-4dbc-9375-a3713428e372",
+      "id": "a820aa0f-9197-4c9a-8efa-63c3835a4d8c",
       "name": "Aggregate"
     },
     {
@@ -178,10 +158,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        -304,
-        -128
+        -704,
+        1568
       ],
-      "id": "f5347bc1-3a71-4f2e-86ba-1e68838a0be0",
+      "id": "e7a9f4e6-6e8d-4e15-acf4-21ce1021045a",
       "name": "Extract from File"
     },
     {
@@ -196,10 +176,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        -304,
-        32
+        -704,
+        1728
       ],
-      "id": "ffa0ff6f-935d-4fbc-af42-217b607a5d15",
+      "id": "4f980917-7374-4f42-90a0-858c3c87d580",
       "name": "Extract from PDF"
     },
     {
@@ -209,10 +189,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1568,
-        -528
+        -1904,
+        1168
       ],
-      "id": "5aa49539-0e8e-465e-967f-00bc85813d26",
+      "id": "28e94ddb-95a6-4d79-b06d-68bf9b6f23f0",
       "name": "Extract raw email data"
     },
     {
@@ -222,10 +202,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -80,
-        208
+        -480,
+        1904
       ],
-      "id": "dfd0dc43-9760-43df-bc00-10e6a628b645",
+      "id": "a52db119-d7ef-4975-ae5a-180a17bb1e3f",
       "name": "Wrap pdf data into a single object"
     },
     {
@@ -235,10 +215,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -80,
-        16
+        -480,
+        1712
       ],
-      "id": "836c36da-7bc8-43c6-9e29-84af1935510c",
+      "id": "a0fab309-6b81-4798-83b1-1500959934a9",
       "name": "Wrap xlsx data into a single object"
     },
     {
@@ -248,10 +228,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -272,
-        -384
+        -672,
+        1312
       ],
-      "id": "4187c4cd-a4e1-4ef0-bec2-4198d2d28bac",
+      "id": "a3228f1f-39c8-4691-88af-82ebe155bd89",
       "name": "Concat all attachment content"
     },
     {
@@ -263,26 +243,26 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -560,
-        -192
+        -960,
+        1504
       ],
-      "id": "25671fc2-d56a-435e-8a74-0031c2f165e4",
+      "id": "3c08ca39-622c-4145-b713-807028d1230e",
       "name": "Sticky Note"
     },
     {
       "parameters": {
         "content": "## Email with attachment processing\n",
         "height": 608,
-        "width": 1040,
+        "width": 1024,
         "color": "#3D4D51"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -560,
-        -832
+        -960,
+        864
       ],
-      "id": "c557cda9-1cf2-4c9e-859b-ea258a1ccdae",
+      "id": "dab3a195-5b56-4d50-8ded-418a8102b1ce",
       "name": "Sticky Note1"
     },
     {
@@ -340,43 +320,26 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        -528,
-        -16
+        -928,
+        1680
       ],
-      "id": "06fa34af-d101-4b04-a683-9f2a05297f13",
+      "id": "b640299c-d9ac-42c2-8408-6953d2e3e2cc",
       "name": "Check file type"
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "http://host.docker.internal:3001/api/fake_ui/search",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('JSON', `DO not add request metadata, just send the JSON, HTTP tools will handle request metadata\n`, 'json') }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequestTool",
-      "typeVersion": 4.4,
-      "position": [
-        320,
-        -592
-      ],
-      "id": "a8b2a0cc-83d9-43aa-b83c-19342fefe543",
-      "name": "Product search1"
-    },
-    {
-      "parameters": {
         "content": "## Saving report if all data matches",
-        "height": 288,
-        "width": 1168
+        "height": 272,
+        "width": 1040,
+        "color": "#177243"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        1200,
-        -1216
+        2848,
+        624
       ],
-      "id": "0317c93f-c0b5-48a5-b3ef-9cd49025bd74",
+      "id": "972f9b28-ae47-47f2-a492-7e4881bcaf36",
       "name": "Sticky Note3"
     },
     {
@@ -386,10 +349,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1072,
-        -192
+        -1472,
+        1504
       ],
-      "id": "5aeccc6c-7d14-42a0-a14e-84f910416928",
+      "id": "fbfc7435-a5b1-4aaa-9fa9-99b9c7c8dbb0",
       "name": "Extract binary data"
     },
     {
@@ -399,10 +362,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1568,
-        -1136
+        3200,
+        688
       ],
-      "id": "32ce450f-f523-4586-8593-e05caf582676",
+      "id": "3c86e1d2-a397-4047-9dae-10484cce4d42",
       "name": "Code in JavaScript"
     },
     {
@@ -548,10 +511,10 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        1776,
-        -1136
+        3408,
+        688
       ],
-      "id": "8ac5858d-78c0-4f39-bb3d-f14a4f914952",
+      "id": "eabe7f36-2577-452e-8eb3-c38df5a1509a",
       "name": "Append row in sheet",
       "credentials": {
         "googleApi": {
@@ -579,25 +542,262 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2048,
-        -1152
+        3680,
+        672
       ],
-      "id": "32efc697-2ae1-4ae4-be23-ebf0e4eaa530",
+      "id": "daee2fdf-2875-4cb0-80d5-0c43a59875b7",
       "name": "Edit Fields"
     },
     {
       "parameters": {
-        "jsCode": "function safeParseJson(rawJson) {\n  // Try direct parse first\n  try {\n    return JSON.parse(rawJson);\n  } catch (e1) {\n    // Try stripping markdown code fences\n    const cleaned = rawJson\n      .replace(/^```(?:json)?\\s*\\n?/i, \"\")\n      .replace(/\\n?```\\s*$/i, \"\")\n      .trim();\n\n    try {\n      return JSON.parse(cleaned);\n    } catch (e2) {\n      // Try extracting JSON object from text\n      const jsonMatch = cleaned.match(/\\{[\\s\\S]*\\}/);\n      if (jsonMatch) {\n        try {\n          return JSON.parse(jsonMatch[0]);\n        } catch (e3) {\n          throw new Error(\n            `Failed to parse AI output as JSON. Raw (first 500 chars): ${rawJson.substring(0, 500)}`,\n          );\n        }\n      }\n      throw new Error(\n        `No JSON object found in AI output. Raw (first 500 chars): ${rawJson.substring(0, 500)}`,\n      );\n    }\n  }\n}\n\nfunction filterProduct(data) {\n  const verifiedProduct = data.products.filter(\n    (product) =>\n      product.existsInSystem ||\n      (product.verifiedFromAttachment.attachmentName !== \"N/A\" &&\n        product.verifiedFromAttachment.attachmentType),\n  );\n  return { ...data, products: verifiedProduct };\n}\n\nconst rawOutput = safeParseJson($input.first().json.output);\n\nreturn filterProduct(rawOutput);\n"
+        "method": "=POST",
+        "url": "http://host.docker.internal:3001/api/fake_ui/claim",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2912,
+        704
+      ],
+      "id": "2c55e7a8-98a1-419f-9dc0-7c362d7615df",
+      "name": "Create ticket",
+      "retryOnFail": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/api/fake_ui/search",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        480,
+        880
+      ],
+      "id": "c640420c-b322-4c7e-ac0c-d0f26f5fed5c",
+      "name": "Validate data on the DB"
+    },
+    {
+      "parameters": {
+        "jsCode": "function safeParseJson(rawJson) {\n  // Try direct parse first\n  try {\n    return JSON.parse(rawJson);\n  } catch (e1) {\n    // Try stripping markdown code fences\n    const cleaned = rawJson\n      .replace(/^```(?:json)?\\s*\\n?/i, \"\")\n      .replace(/\\n?```\\s*$/i, \"\")\n      .trim();\n\n    try {\n      return JSON.parse(cleaned);\n    } catch (e2) {\n      // Try extracting JSON object from text\n      const jsonMatch = cleaned.match(/\\{[\\s\\S]*\\}/);\n      if (jsonMatch) {\n        try {\n          return JSON.parse(jsonMatch[0]);\n        } catch (e3) {\n          throw new Error(\n            `Failed to parse AI output as JSON. Raw (first 500 chars): ${rawJson.substring(0, 500)}`,\n          );\n        }\n      }\n      throw new Error(\n        `No JSON object found in AI output. Raw (first 500 chars): ${rawJson.substring(0, 500)}`,\n      );\n    }\n  }\n}\n\nreturn safeParseJson($input.first().json.output);"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        640,
-        -1008
+        224,
+        880
       ],
-      "id": "f6958d8b-7d9f-467a-b847-fc22b5eca47f",
-      "name": "Parse Json and filter data",
-      "onError": "continueErrorOutput"
+      "id": "d6b124a2-d09c-4148-bf22-3641c05b156c",
+      "name": "Parse string to JSON"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=COmpare data from the two list below:\nproductExtractedFromEmail: {{JSON.stringify( $json.data.products )}}\ncustomerNameFromEmail : {{ $json.data.customer.name }}\n\nprodutsListFromSystem : {{ JSON.stringify($json.data.productFromSearch.unmatchedProducts) }}",
+        "options": {
+          "systemMessage": "Your task is to match every product in `productExtractedFromEmail` and customerNameFromEmail with the best matching product in `produtsListFromSystem`.\n\n## Matching Process\n\nONLY for EACH product in `productExtractedFromEmail` WHERE  \"existsInSystem\" is FALSE:\n\n1. Compare it against EVERY product in `produtsListFromSystem`.\n2. Evaluate every available field.\n3. Calculate the best overall match.\n4. Select the highest-confidence candidate.\n5. If no candidate has sufficient evidence, treat the product as unmatched.\n6. customerName field on each produtsListFromSystem must match customerNameFromEmail\n\nDo NOT stop after finding the first possible match. Every extracted product must be compared against every unmatched system product before making a decision.\n\n---\n\n# Matching Rules\n\nTreat fields differently depending on whether they are identifiers or descriptive information.\n\n## High Priority (Exact Match)\n\nThese fields are strong identifiers.\n\n### itemCode\n\n- Exact match only.\n- Ignore if either value is `null`, empty, `\"N/A\"`, or undefined.\n\n### lotNumber\n\n- Exact match only.\n- Ignore if either value is missing.\n\n### orderCode\n\n- Exact match only.\n- Ignore if either value is missing.\n\n### orderDate\n\n- Exact match only.\n- Ignore if either value is missing.\n\n---\n\n## Medium Priority (Semantic Match)\n\n### productName\n\nUse semantic matching instead of strict string comparison.\n\nExamples of valid matches:\n\n- Disposable Syringe\n  ↔ Disposable Syringe 20mL\n\n- Surgical Mask\n  ↔ Surgical Mask\n\n- Peritoneal Dialysis Catheter\n  ↔ Peritoneal Dialysis Catheter\n\nThe comparison should tolerate:\n\n- spelling mistakes\n- OCR errors\n- abbreviations\n- singular/plural differences\n- capitalization differences\n- punctuation differences\n- additional descriptors (size, model, capacity, packaging)\n\nHowever, do NOT match different products.\n\nExample:\n\nPleural Drainage Kit\n\n≠\n\nPeritoneal Dialysis Catheter\n\n---\n\n### vendor\n\nUse semantic comparison.\n\nIgnore:\n\n- capitalization\n- punctuation\n- company suffixes (Ltd, LLC, Inc., etc.)\n\nIf the extracted vendor is `\"N/A\"` or missing, ignore this field.\n\n---\n\n## Supporting Evidence\n\nIf available, also compare:\n\n- quantityOrdered\n- quantityReceived\n- quantityBilled\n- customerName\n- documentNumber\n\nThese fields should increase confidence but must NEVER override a strong product mismatch.\n\n---\n\n## Handling Missing Values\n\nTreat the following values as missing:\n\n- null\n- \"\"\n- \"N/A\"\n- undefined\n\nMissing values should neither increase nor decrease the confidence score.\n\n---\n\n# Selecting the Best Match\n\nWhen multiple candidates are available, rank them using the following priority:\n\n1. Exact orderCode\n2. Exact itemCode\n3. Exact lotNumber\n4. Highest semantic similarity of productName\n5. Matching vendor\n6. Matching quantities\n7. Matching customerName\n8. Matching documentNumber\n\nAlways choose the highest-ranked candidate.\n\nNever force a match if confidence is low.\n\n---\n\n# Rejecting Matches\n\nA product should remain unmatched if:\n- Customer name doesn't match\n- the product names describe different medical products\n- there is insufficient evidence\n- confidence is low\n\nDo not guess.\n\n---\n\n# Output Construction\n\nThe final output must be a single JSON array of merged product objects.\n\nReturn exactly one object for every product in `productExtractedFromEmail`.\n\n---\n\n## If a Match Is Found\n\nCreate a merged product object.\n\nMerge using the following rules:\n\n1. Start with the matched product from `produtsListFromSystem`.\n\n2. For fields that exist in both objects, ALWAYS keep the value from the system product.\n\nExamples:\n\n- itemCode\n- productName\n- vendor\n- documentNumber\n- orderCode\n- orderDate\n- lotNumber\n- quantityOrdered\n- quantityReceived\n- quantityBilled\n\nmust all come from the matched system product.\n\n3. Copy every field that exists only in the extracted email product into the merged object.\n\nExamples include (but are not limited to):\n\n- lineNumber\n- existsInSystem\n- verifiedFromAttachment\n- status\n- comments\n- any additional email-specific fields\n\n4. Set `existsInSystem` to `true` if one or more matching products are found in `produtsListFromSystem`, even if multiple equally good matches exist.\n\n5. If no matching product is found put false\n\nThe final object should contain the complete system product enriched with the additional information extracted from the email.\n\n---\n\n## If Multiple Candidates Are Equally Good\n\nIf two or more candidates have the same confidence score and cannot be uniquely identified (for example duplicate system records), do not arbitrarily choose one.\n\nInstead:\n\n- Merge the extracted product with the first matching system record.\n- Preserve all fields according to the merge rules above.\n- Replace the `comments` field with:\n\n```\nMultiple product match need confirmation from customer\n```\n\n- Add the following field:\n\n```json\n\"requiresCustomerConfirmation\": true\n```\n\nThis indicates that customer confirmation is required before the product can be uniquely identified.\n\n---\n\n## If No Match Is Found\n\nReturn the original product from `productExtractedFromEmail`.\n\nAlso include:\n\n```json\n\"requiresCustomerConfirmation\": false\n```\n\nDo not invent or modify any system data.\n\n# Reconciliation Result\n\nIn addition to the merged product list, return a `reconciliationResult` object that summarizes the reconciliation outcome.\n\nThe object must contain:\n\n- `totalProduct`\n  - Total number of products in `productExtractedFromEmail`.\n\n- `totalReconciledProduct`\n  - Total number of products that have **exactly one unique match** in `produtsListFromSystem.unmatchedProducts`.\n\n- `success`\n  - `true` if every extracted product has exactly one unique match.\n  - `false` otherwise.\n\nProducts requiring customer confirmation because multiple equally good matches exist are **NOT** considered reconciled.\n\nProducts with no match are also **NOT** considered reconciled.\n\nExample:\n\n```json\n{\n  \"reconciliationResult\": {\n    \"totalProduct\": 3,\n    \"totalReconciledProduct\": 2,\n    \"success\": false\n  }\n}\n```\n\n---\n\n# Final Output Requirements\n\nReturn a single JSON object with the following structure:\n\n```json\n{\n  \"products\": [\n    {\n      // merged product object\n    }\n  ],\n  \"reconciliationResult\": {\n    \"totalProduct\": 0,\n    \"totalReconciledProduct\": 0,\n    \"success\": false\n  }\n}\n```\n\nRules:\n\n- `products` must contain exactly one object for every product in `productExtractedFromEmail`.\n- `totalProduct` must equal the length of `productExtractedFromEmail`.\n- `totalReconciledProduct` counts only products with exactly one unique match.\n- `success` is `true` only when:\n  ```\n  totalReconciledProduct == totalProduct\n  ```\n- Return valid JSON only. Do not include explanations, markdown, reasoning, or additional text.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1184,
+        1200
+      ],
+      "id": "65da5ddc-9ae0-40d7-bedb-07ca506665a3",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "deepseek/deepseek-v4-flash",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        1376
+      ],
+      "id": "4ee1542a-d3b4-45d2-907a-8318336f9849",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "aVl4vdczlRIjwpSe",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5d6a5db8-c855-454d-b967-31f3cbb2613b",
+              "name": "issues",
+              "value": "={{ $json.data.issues }}",
+              "type": "string"
+            },
+            {
+              "id": "de1677bc-4007-4d02-b91b-ac3e2f9b671c",
+              "name": "requestInfo",
+              "value": "={{ $json.data.requestInfo }}",
+              "type": "object"
+            },
+            {
+              "id": "e9551d2f-7031-4142-8884-5fb922aa2d45",
+              "name": "customer",
+              "value": "={{ $json.data.customer }}",
+              "type": "object"
+            },
+            {
+              "id": "7fac5af9-ad22-4336-b2bb-f467f6e1e0da",
+              "name": "searchResult",
+              "value": "={{ $json.data.searchResult }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1824,
+        1088
+      ],
+      "id": "6e192707-913e-45a3-9387-ea08dfaa025d",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2080,
+        1168
+      ],
+      "id": "a2c1cc8f-b140-4b45-b192-27d0bb821746",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "49781bb1-8037-43df-bc94-077a1df0f10c",
+              "name": "products",
+              "value": "={{ $json.products }}",
+              "type": "array"
+            },
+            {
+              "id": "de44e484-f96a-4dbb-bd0d-2ee8c83ff0da",
+              "name": "reconciliationResult",
+              "value": "={{ $json.reconciliationResult }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1824,
+        1264
+      ],
+      "id": "ffa0a8b1-cb69-4bd9-a069-c7c3fbaf65bf",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "jsCode": "function safeParseJson(rawJson) {\n  // Try direct parse first\n  try {\n    return JSON.parse(rawJson);\n  } catch (e1) {\n    // Try stripping markdown code fences\n    const cleaned = rawJson\n      .replace(/^```(?:json)?\\s*\\n?/i, \"\")\n      .replace(/\\n?```\\s*$/i, \"\")\n      .trim();\n\n    try {\n      return JSON.parse(cleaned);\n    } catch (e2) {\n      // Try extracting JSON object from text\n      const jsonMatch = cleaned.match(/\\{[\\s\\S]*\\}/);\n      if (jsonMatch) {\n        try {\n          return JSON.parse(jsonMatch[0]);\n        } catch (e3) {\n          throw new Error(\n            `Failed to parse AI output as JSON. Raw (first 500 chars): ${rawJson.substring(0, 500)}`,\n          );\n        }\n      }\n      throw new Error(\n        `No JSON object found in AI output. Raw (first 500 chars): ${rawJson.substring(0, 500)}`,\n      );\n    }\n  }\n}\n\nreturn safeParseJson($input.first().json.output);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        1200
+      ],
+      "id": "581df3f5-dc8c-43c4-84a5-4e7223591e9a",
+      "name": "Parse string to JSON1"
+    },
+    {
+      "parameters": {
+        "content": "## LLM reconciliation if can't be match with code\n",
+        "height": 464,
+        "width": 1120,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        1056
+      ],
+      "id": "45f2331b-c21d-4572-b51f-57ded185f7a7",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ce669031-c421-4268-9602-26fe4696841c",
+              "name": "issues",
+              "value": "={{ $json.data.issues }}",
+              "type": "string"
+            },
+            {
+              "id": "3a6079d4-db91-414f-9ace-20e3b6a4e668",
+              "name": "requestInfo",
+              "value": "={{ $json.data.requestInfo }}",
+              "type": "object"
+            },
+            {
+              "id": "f1146304-5d94-4584-bd50-20ae3a7ea1c5",
+              "name": "customer",
+              "value": "={{ $json.data.customer }}",
+              "type": "object"
+            },
+            {
+              "id": "5bd9ba86-b523-48d8-a986-359c54203aa9",
+              "name": "products",
+              "value": "={{ $json.data.products }}",
+              "type": "array"
+            },
+            {
+              "id": "65dfb6f1-0957-44dc-8730-4d4aebc987a0",
+              "name": "searchResult",
+              "value": "={{ $json.data.searchResult }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1824,
+        896
+      ],
+      "id": "d123bcca-1839-4ea8-b637-bad597776bf9",
+      "name": "Edit Fields3"
     },
     {
       "parameters": {
@@ -610,13 +810,22 @@
           },
           "conditions": [
             {
-              "id": "fdd8a621-ab2d-46c7-80fb-8dea82fe1f87",
-              "leftValue": "={{ $json.products }}",
-              "rightValue": 0,
+              "id": "f82b939c-da52-4309-8355-7ca7af19b5f2",
+              "leftValue": "={{ $json.data.productFromSearch.matchedProducts }}",
+              "rightValue": "",
               "operator": {
                 "type": "array",
-                "operation": "lengthGt",
-                "rightType": "number"
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "76c0ff77-cc7e-43c5-980f-ea9dfb34acbf",
+              "leftValue": "={{ $json.data.searchResult.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
               }
             }
           ],
@@ -627,11 +836,92 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        848,
-        -1104
+        688,
+        880
       ],
-      "id": "9f50e5e3-8576-4a3a-bec5-25d79c551d2b",
+      "id": "bda9d558-edd4-45f4-927b-a06249689922",
+      "name": "Check if validation done"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7ee16d41-d59e-4831-be1f-58b2a508a84b",
+              "leftValue": "={{ $json.products }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "4f553ddd-8dfc-4013-a07f-3934a9f6c256",
+              "leftValue": "={{ $json.reconciliationResult.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2576,
+        992
+      ],
+      "id": "e84922a2-6311-486b-ad78-c4180f470a42",
       "name": "If1"
+    },
+    {
+      "parameters": {
+        "fromEmail": "test@test.local",
+        "toEmail": "error_report@test.local",
+        "subject": "Automation error",
+        "emailFormat": "text",
+        "text": "=Hello!\n\nThis is an automatic email to notify that the workflow couldn't handle customer request. Bellow more details about the request: \n\n- Email : {{ $json.requestInfo.email }}\n- Name attached to the email :  {{ $json.requestInfo.requestor }}\n- Company name: {{ $json.customer.organization !=='N/A' ? $json.customer.organization : 'Not specified' }}\n\nThis below a summary of the report from the customer\n\n{{ $json.issues }}\n\nCheck on the system reported that {{ $json.reconciliationResult.totalReconciledProduct }} out of {{ $json.reconciliationResult.totalProduct }} has been checked onf the system.\n\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2880,
+        1072
+      ],
+      "id": "a26a7318-37de-4ffc-97bd-a97771d7f939",
+      "name": "Send an Email",
+      "webhookId": "d3176842-b131-4e66-bbea-c1d42a868c00",
+      "credentials": {
+        "smtp": {
+          "id": "uwWyJYDCAiuXwDHt",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const requestData = $input.all()[0].json\nfunction filterProduct(data) {\n  const verifiedProduct = data.products.filter(\n    (product) =>\n      product.existsInSystem ||\n      (product.verifiedFromAttachment.attachmentName !== \"N/A\" &&\n        product.verifiedFromAttachment.attachmentType),\n  );\n  return { ...data, products: verifiedProduct };\n}\n\nconsole.log(requestData);\n\nconst filteredData = filterProduct(requestData);\n\nreturn filteredData"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2368,
+        992
+      ],
+      "id": "61bdf5d8-e8f2-464a-92fa-a2574f8a1045",
+      "name": "Filter product"
     }
   ],
   "pinData": {},
@@ -681,22 +971,11 @@
         ]
       ]
     },
-    "Send data to playwright script": {
-      "main": [
-        [
-          {
-            "node": "Code in JavaScript",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Parse raw string into string JSON": {
       "main": [
         [
           {
-            "node": "Parse Json and filter data",
+            "node": "Parse string to JSON",
             "type": "main",
             "index": 0
           }
@@ -827,17 +1106,6 @@
         ]
       ]
     },
-    "Product search1": {
-      "ai_tool": [
-        [
-          {
-            "node": "Parse raw string into string JSON",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Extract binary data": {
       "main": [
         [
@@ -871,11 +1139,133 @@
         ]
       ]
     },
-    "Parse Json and filter data": {
+    "Create ticket": {
       "main": [
         [
           {
-            "node": "If1",
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse string to JSON": {
+      "main": [
+        [
+          {
+            "node": "Validate data on the DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate data on the DB": {
+      "main": [
+        [
+          {
+            "node": "Check if validation done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse string to JSON1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Parse string to JSON1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Filter product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Filter product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if validation done": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Agent",
             "type": "main",
             "index": 0
           }
@@ -886,7 +1276,25 @@
       "main": [
         [
           {
-            "node": "Send data to playwright script",
+            "node": "Create ticket",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter product": {
+      "main": [
+        [
+          {
+            "node": "If1",
             "type": "main",
             "index": 0
           }
@@ -900,7 +1308,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "c0c0a9be-2a43-4d52-a7f7-6b4c3e685309",
+  "versionId": "38e02504-6dcb-4342-8f77-8e350b19931c",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "177add875a1f635cd6d08fc662846957ccba89ab9583c6fcf2fd625331457fee"

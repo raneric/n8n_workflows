@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Claim",
+  "type": "object",
+  "required": ["claimInput"],
+  "properties": {
+    "claimInput": {
+      "type": "object",
+      "required": ["requestInfo", "customer", "products", "issues"],
+      "properties": {
+        "issues": {
+          "type": "string",
+          "description": "Issues reported"
+        },
+        "requestInfo": {
+          "type": "object",
+          "description": "Information about the request email.",
+          "required": ["dateOfRequest", "requestor"],
+          "properties": {
+            "dateOfRequest": {
+              "type": "string",
+              "format": "date",
+              "description": "Date when the email was received."
+            },
+            "requestor": {
+              "type": "string",
+              "description": "Name associated with the email."
+            }
+          },
+          "additionalProperties": false
+        },
+        "customer": {
+          "type": "object",
+          "required": [
+            "name",
+            "organization",
+            "department",
+            "address",
+            "phone",
+            "email"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "organization": {
+              "type": "string"
+            },
+            "department": {
+              "type": "string"
+            },
+            "address": {
+              "type": "object",
+              "required": ["street", "city", "state", "postalCode"],
+              "properties": {
+                "street": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "postalCode": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "phone": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string",
+              "format": "email"
+            }
+          },
+          "additionalProperties": false
+        },
+        "products": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "lineNumber",
+              "documentNumber",
+              "productName",
+              "itemCode",
+              "lotNumber",
+              "quantityOrdered",
+              "quantityBilled",
+              "quantityReceived",
+              "vendor",
+              "status"
+            ],
+            "properties": {
+              "lineNumber": {
+                "type": "integer"
+              },
+              "documentNumber": {
+                "type": "string"
+              },
+              "productName": {
+                "type": "string"
+              },
+              "itemCode": {
+                "type": "string"
+              },
+              "lotNumber": {
+                "type": "string"
+              },
+              "quantityOrdered": {
+                "type": "integer"
+              },
+              "quantityBilled": {
+                "type": "integer"
+              },
+              "orderCode": {
+                "type": "string"
+              },
+              "orderDate": {
+                "type": "string",
+                "format": "date"
+              },
+              "quantityReceived": {
+                "type": "integer"
+              },
+              "comments": {
+                "type": "string"
+              },
+              "existsInSystem": {
+                "type": "boolean"
+              },
+              "verifiedFromAttachment": {
+                "type": ["object", "null"],
+                "required": ["attachmentType", "attachmentName"],
+                "properties": {
+                  "attachmentName": {
+                    "type": "string"
+                  },
+                  "attachmentType": {
+                    "type": "string"
+                  }
+                }
+              },
+              "vendor": {
+                "type": "object",
+                "required": ["name", "id"],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "integer"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "status": {
+                "type": "string",
+                "enum": ["Fully Billed", "Pending Bill"]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
